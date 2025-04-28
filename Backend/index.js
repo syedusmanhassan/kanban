@@ -320,6 +320,8 @@ app.post('/', async (req, res) => {
     }
   });
 
+  app.use('/api', apiRouter);
+
   app.use(express.static(path.join(__dirname, '../Fronend/dist')));
 
   app.get('*', (req, res) => {
