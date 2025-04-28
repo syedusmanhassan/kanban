@@ -8,6 +8,10 @@ import Board from "./models/board.js";
 import { connectDB } from './config/db.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import path from "path"
+import { fileURLToPath } from 'url';
+
+
 
 dotenv.config();
 
@@ -22,6 +26,10 @@ connectDB();
 app.use(cors());
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static(path.join(__dirname, '../Fronend/dist')));
 
 
 mongoose.connection.once('open', async () => {
@@ -34,6 +42,9 @@ mongoose.connection.once('open', async () => {
 });
 
 
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../Fronend/dist/index.html'));
+});
 
 app.get("/", async(req, res) => {
   try {
@@ -45,7 +56,6 @@ app.get("/", async(req, res) => {
       return res.status(400).json({ error: "Team name is required" });
     }
     
-    // Find the board ID for this team
     const board = await Board.findOne({ name: teamName });
     console.log("Found board:", board);
     
@@ -54,12 +64,10 @@ app.get("/", async(req, res) => {
       return res.status(404).json({ error: "Team not found" });
     }
     
-    // Find cards associated with this board
     const cards = await Card.find({ board: board._id });
     console.log("Board ID being queried:", board._id);
     console.log("Found cards:", cards);
     
-    // If still empty, try a different approach
     if (cards.length === 0) {
       console.log("No cards found with board ID. Trying alternate approach...");
       // Try by using board's cards array
@@ -82,12 +90,12 @@ app.post("/signup", async (req, res) => {
   console.log(email, password, teamName);
 
   try {
-    // Validate input
+    
     if (!email || !password || !teamName) {
       return res.status(400).json({ error: "Please fill all the fields" });
     }
 
-    // Check if user already exists
+    
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       return res.status(409).json({
@@ -96,30 +104,30 @@ app.post("/signup", async (req, res) => {
       });
     }
 
-    // Check if board/team exists
+    
     let board = await Board.findOne({ name: teamName });
     const isNewTeam = !board;
 
-    // If no board exists with that team name, create a new one
+
     if (isNewTeam) {
       board = new Board({ name: teamName });
       await board.save();
     }
 
-    // Hash password
+    
     const hashPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create new user with reference to board
+
     const newUser = new User({
       email,
       password: hashPassword,
-      board: board._id // Link user to the board
+      board: board._id 
     });
 
-    // Save the user
+    
     await newUser.save();
 
-    // Generate token with team info
+    
     const token = jwt.sign(
       { 
         id: newUser._id, 
@@ -131,7 +139,7 @@ app.post("/signup", async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    // Return success with appropriate message
+
     return res.status(201).json({
       message: isNewTeam 
         ? "User created successfully, new team created" 
@@ -157,7 +165,7 @@ app.post("/login", async (req, res) => {
   console.log(email, password);
 
   try {
-    // Find user and populate board to get team info
+    
     const user = await User.findOne({ email }).populate('board');
 
     if (!user) {
@@ -170,7 +178,7 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Get team name from the associated board
+  
     const teamName = user.board ? user.board.name : null;
     const boardId = user.board ? user.board._id : null;
 
@@ -204,13 +212,13 @@ app.post("/login", async (req, res) => {
 
 app.get("/board/:id", async(req, res) => {
   try {
-    // First find the user by ID
+    
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Then find the associated board
+    
     const board = await Board.findById(user.board).populate('cards');
     if (!board) {
       return res.status(404).json({ message: 'Board not found' });
@@ -237,18 +245,18 @@ app.post('/', async (req, res) => {
       return res.status(404).json({ message: 'Team not found' });
     }
 
-    // Create a new card with the board ID properly set
+    
     const card = new Card({
       title,
       column,
-      board: board._id  // Make sure this field is being set correctly
+      board: board._id  
     });
     console.log("New card created:", card);
 
     const savedCard = await card.save();
     console.log("Card saved to database:", savedCard);
     
-    // Add card to board's cards array
+    
     await Board.findByIdAndUpdate(
       board._id,
       { $push: { cards: savedCard._id } }
