@@ -43,7 +43,7 @@ const Login = () => {
         <div className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
           <div className="bg-indigo-600 p-6">
             <h2 className="text-2xl font-bold text-white text-center">Join Our Kanban</h2>
-            <p className="text-indigo-200 text-center mt-2">Create your account to get started</p>
+            <p className="text-indigo-200 text-center mt-2">Login to your account to get started</p>
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -90,16 +90,16 @@ const Login = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing up...
+                  Loging In...
                 </span>
               ) : (
-                'Sign Up'
+                'Login'
               )}
             </button>
             
             <p className="text-center text-sm text-gray-600">
               Don't have an account?{" "} 
-              <Link  to="/" className="text-indigo-600 hover:text-indigo-500 font-medium">Sign in</Link>
+              <Link  to="/" className="text-indigo-600 hover:text-indigo-500 font-medium">Sign Up</Link>
             </p>
           </form>
         </div>
