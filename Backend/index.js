@@ -42,10 +42,6 @@ mongoose.connection.once('open', async () => {
 });
 
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../Fronend/dist/index.html'));
-});
-
 app.get("/", async(req, res) => {
   try {
     const { teamName } = req.query;
@@ -323,6 +319,12 @@ app.post('/', async (req, res) => {
       console.error("Error deleting card:", err);
       res.status(500).json({ message: err.message });
     }
+  });
+
+  app.use(express.static(path.join(__dirname, '../Fronend/dist')));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Fronend/dist/index.html'));
   });
   
 app.listen(port , ()=>{
