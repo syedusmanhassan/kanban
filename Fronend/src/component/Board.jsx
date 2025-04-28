@@ -25,7 +25,7 @@ const Board = () => {
   useEffect(() => {
     if (userId) {
       axios
-        .get(`http://localhost:3000/board/${userId}`) 
+        .get(`https://kanban-8ds7.onrender.com/board/${userId}`) 
         .then((res) => {
           setTeamName(res.data.name);
         })
@@ -37,7 +37,7 @@ const Board = () => {
     if (teamName) {
       console.log("Fetching cards for teamName:", teamName);
       axios
-        .get(`http://localhost:3000/?teamName=${teamName}`)
+        .get(`https://kanban-8ds7.onrender.com/?teamName=${teamName}`)
         .then((res) => {
           console.log("Cards received from server:", res.data);
           setCards(res.data);

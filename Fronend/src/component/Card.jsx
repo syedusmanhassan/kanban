@@ -11,7 +11,7 @@ const Card = ({ title, _id, column, handleDragStart, setCards }) => {
     if (!editTitle.trim()) return;
 
     try {
-      const res = await axios.patch(`http://localhost:3000/${_id}`, {
+      const res = await axios.patch(`https://kanban-8ds7.onrender.com/${_id}`, {
         title: editTitle.trim(),
         column,
       });

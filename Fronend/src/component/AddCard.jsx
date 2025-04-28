@@ -11,7 +11,7 @@ const AddCard = ({ column, setCards,teamName }) => {
     e.preventDefault();
     if (!text.trim().length) return;
     try {
-      const res = await axios.post("http://localhost:3000/", {
+      const res = await axios.post("https://kanban-8ds7.onrender.com/", {
         title: text.trim(),
         column,
         teamName

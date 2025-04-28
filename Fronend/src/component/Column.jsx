@@ -30,7 +30,7 @@ const Column = ({ title, headingColor, cards, column, setCards, teamName }) => {
       cardToTransfer = { ...cardToTransfer, column };
 
       try {
-        await axios.patch(`http://localhost:3000/${cardToTransfer._id}`, {
+        await axios.patch(`https://kanban-8ds7.onrender.com/${cardToTransfer._id}`, {
           column: column,
         });
       } catch (err) {

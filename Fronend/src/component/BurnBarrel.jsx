@@ -18,7 +18,7 @@ const BurnBarrel = ({ setCards }) => {
   const handleDragEnd = async (e) => {
     const cardId = e.dataTransfer.getData("cardId");
     try {
-      await axios.delete(`http://localhost:3000/${cardId}`);
+      await axios.delete(`https://kanban-8ds7.onrender.com/${cardId}`);
       setCards((prev) => prev.filter((c) => c._id !== cardId));
     } catch (err) {
       console.error("Failed to delete card:", err);

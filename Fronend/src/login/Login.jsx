@@ -23,7 +23,7 @@ const Login = () => {
         setLoading(true);
         console.log(formData);
         try{
-           const response = await axios.post("http://localhost:3000/login", {
+           const response = await axios.post("https://kanban-8ds7.onrender.com/login", {
                 email: formData.email,
                 password: formData.password,
             });

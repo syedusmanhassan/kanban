@@ -25,7 +25,7 @@ const SignupForm = () => {
     console.log(formData);
 
     try {
-      const res = await axios.post("http://localhost:3000/signup", {
+      const res = await axios.post("https://kanban-8ds7.onrender.com/signup", {
         email: formData.email,
         password: formData.password,
         teamName: formData.teamName,
