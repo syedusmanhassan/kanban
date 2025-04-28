@@ -62,7 +62,7 @@ app.get("/", async(req, res) => {
     
     if (cards.length === 0) {
       console.log("No cards found with board ID. Trying alternate approach...");
-      // Try by using board's cards array
+  
       const populatedBoard = await Board.findById(board._id).populate('cards');
       const cardsFromBoard = populatedBoard.cards || [];
       console.log("Cards from board populate:", cardsFromBoard);
@@ -279,7 +279,7 @@ app.post('/', async (req, res) => {
 
   app.delete('/:id', async (req, res) => {
     try {
-      // First find the card to get the board reference
+    
       const card = await Card.findById(req.params.id);
       
       if (!card) {
@@ -289,12 +289,12 @@ app.post('/', async (req, res) => {
       console.log("Found card to delete:", card);
       console.log("Card's board ID:", card.board);
       
-      // Delete the card from the board's cards array
+    
       if (card.board) {
         const updateResult = await Board.findByIdAndUpdate(
           card.board,
           { $pull: { cards: req.params.id } },
-          { new: true } // Return the updated document
+          { new: true } 
         );
         
         console.log("Board after removing card:", updateResult);
@@ -306,7 +306,6 @@ app.post('/', async (req, res) => {
         console.log("Card has no board reference");
       }
       
-      // Delete the card itself
       const deleteResult = await Card.findByIdAndDelete(req.params.id);
       console.log("Card delete result:", deleteResult);
       
