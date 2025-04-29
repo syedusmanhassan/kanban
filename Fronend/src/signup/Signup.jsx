@@ -6,13 +6,15 @@ const SignupForm = () => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
-  const [formData,setFormData] = useState({
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
     teamName: '',
   });
 
-  const handleChange=(e)=>{
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value 
@@ -32,7 +34,8 @@ const SignupForm = () => {
       });
       
       if (res.data.emailExists) {
-        alert("Email already registered. Please log in.");
+        setModalMessage("Email already registered. Please try with another email.");
+        setShowModal(true);
       } else if (res.data.teamExists) {
         console.log(res.data.teamExists);
         console.log("Team already exists, redirecting to kanban board");
@@ -53,16 +56,55 @@ const SignupForm = () => {
       }
     } catch (err) {
       console.error("Registration error:", err.response?.data || err.message);
-      alert("Registration failed. Please try again.");
+      // Get more specific error message when available
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          "Registration failed. Please try again.";
+      setModalMessage(errorMessage);
+      setShowModal(true);
     } finally {
       setLoading(false);
     }
   };
 
-
+  const closeModal = () => {
+    setShowModal(false);
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+      {/* Error Modal */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-white bg-opacity-50" onClick={closeModal}></div>
+          <div className="bg-white rounded-lg p-6 shadow-xl max-w-md w-full z-10 relative">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-red-600">Error</h3>
+              <button 
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-gray-700">{modalMessage}</p>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
         <div className="bg-indigo-600 p-6">
           <h2 className="text-2xl font-bold text-white text-center">Join Our Kanban</h2>
