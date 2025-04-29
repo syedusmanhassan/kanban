@@ -1,80 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import Card from "./Card";
 import DropIndicator from "./DropIndicator";
 import AddCard from "./AddCard";
 import axios from "axios";
 
-const Column = ({ title, headingColor, cards, column, setCards, teamName }) => {
+const Column = React.memo(({ title, headingColor, cards, column, setCards, teamName }) => {
   const [active, setActive] = useState(false);
+  const indicatorsRef = useRef([]);
+  
+  // Memoize filtered cards to prevent recalculating on every render
+  const filteredCards = useMemo(() => 
+    cards.filter((c) => c.column === column),
+    [cards, column]
+  );
 
-  const handleDragStart = (e, card) => {
+  // Create memoized event handlers
+  const handleDragStart = useCallback((e, card) => {
     e.dataTransfer.setData("cardId", card._id);
-  };
+  }, []);
 
-  const handleDragEnd = async(e) => {
-    const cardId = e.dataTransfer.getData("cardId");
+  const getIndicators = useCallback(() => {
+    // Cache indicators to avoid DOM queries on every drag event
+    indicatorsRef.current = Array.from(document.querySelectorAll(`[data-column="${column}"]`));
+    return indicatorsRef.current;
+  }, [column]);
 
-    setActive(false);
-    clearHighlights();
-
-    const indicators = getIndicators();
-    const { element } = getNearestIndicator(e, indicators);
-
-    const before = element.dataset.before || "-1";
-
-    if (before !== cardId) {
-      let copy = [...cards];
-
-      let cardToTransfer = copy.find((c) => c._id === cardId);
-      if (!cardToTransfer) return;
-      cardToTransfer = { ...cardToTransfer, column };
-
-      try {
-        await axios.patch(`https://kanban-8ds7.onrender.com/${cardToTransfer._id}`, {
-          column: column,
-        });
-      } catch (err) {
-        console.error("Failed to update card status:", err);
-      }
-
-      copy = copy.filter((c) => c._id !== cardId);
-
-      const moveToBack = before === "-1";
-
-      if (moveToBack) {
-        copy.push(cardToTransfer);
-      } else {
-        const insertAtIndex = copy.findIndex((el) => el._id === before);
-        if (insertAtIndex === undefined) return;
-
-        copy.splice(insertAtIndex, 0, cardToTransfer);
-      }
-
-      setCards(copy);
-    }
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    highlightIndicator(e);
-    setActive(true);
-  };
-
-  const clearHighlights = (els) => {
+  const clearHighlights = useCallback((els) => {
     const indicators = els || getIndicators();
     indicators.forEach((i) => {
       i.style.opacity = "0";
     });
-  };
+  }, [getIndicators]);
 
-  const highlightIndicator = (e) => {
-    const indicators = getIndicators();
-    clearHighlights(indicators);
-    const el = getNearestIndicator(e, indicators);
-    el.element.style.opacity = "1";
-  };
-
-  const getNearestIndicator = (e, indicators) => {
+  const getNearestIndicator = useCallback((e, indicators) => {
     const DISTANCE_OFFSET = 50;
     const el = indicators.reduce(
       (closest, child) => {
@@ -92,18 +50,85 @@ const Column = ({ title, headingColor, cards, column, setCards, teamName }) => {
       }
     );
     return el;
-  };
+  }, []);
 
-  const getIndicators = () => {
-    return Array.from(document.querySelectorAll(`[data-column="${column}"]`));
-  };
+  const highlightIndicator = useCallback((e) => {
+    const indicators = getIndicators();
+    clearHighlights(indicators);
+    const el = getNearestIndicator(e, indicators);
+    el.element.style.opacity = "1";
+  }, [getIndicators, clearHighlights, getNearestIndicator]);
 
-  const handleDragLeave = () => {
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    // Throttle highlight updates for better performance
+    requestAnimationFrame(() => {
+      highlightIndicator(e);
+      setActive(true);
+    });
+  }, [highlightIndicator]);
+
+  const handleDragLeave = useCallback(() => {
     clearHighlights();
     setActive(false);
-  };
+  }, [clearHighlights]);
 
-  const filteredCards = cards.filter((c) => c.column === column);
+  const handleDragEnd = useCallback(async(e) => {
+    const cardId = e.dataTransfer.getData("cardId");
+    
+    setActive(false);
+    clearHighlights();
+
+    const indicators = getIndicators();
+    const { element } = getNearestIndicator(e, indicators);
+    
+    const before = element.dataset.before || "-1";
+
+    // Don't proceed if trying to drop card onto itself
+    if (before === cardId) return;
+
+    // Find the card in the current array
+    const cardToTransfer = cards.find((c) => c._id === cardId);
+    if (!cardToTransfer) return;
+    
+    // Only update if the column has changed
+    const needsColumnUpdate = cardToTransfer.column !== column;
+    
+    // Optimistic UI update
+    let copy = [...cards];
+    
+    // Remove card from its current position
+    copy = copy.filter((c) => c._id !== cardId);
+    
+    // Create updated card with new column
+    const updatedCard = { ...cardToTransfer, column };
+    
+    // Determine insert position
+    const moveToBack = before === "-1";
+    if (moveToBack) {
+      copy.push(updatedCard);
+    } else {
+      const insertAtIndex = copy.findIndex((el) => el._id === before);
+      if (insertAtIndex === -1) return;
+      copy.splice(insertAtIndex, 0, updatedCard);
+    }
+    
+    // Update UI immediately (optimistic update)
+    setCards(copy);
+    
+    // Then make API call if needed
+    if (needsColumnUpdate) {
+      try {
+        await axios.patch(`https://kanban-8ds7.onrender.com/${cardToTransfer._id}`, {
+          column: column,
+        });
+      } catch (err) {
+        console.error("Failed to update card status:", err);
+        // Revert on error
+        setCards(cards);
+      }
+    }
+  }, [cards, column, clearHighlights, getIndicators, getNearestIndicator, setCards]);
 
   return (
     <div className="w-full md:w-64 lg:w-56 shrink-0 mb-6 md:mb-0">
@@ -123,14 +148,19 @@ const Column = ({ title, headingColor, cards, column, setCards, teamName }) => {
           active ? "bg-neutral-800/50" : "bg-neutral-800/0"
         }`}
       >
-        {filteredCards.map((c) => {
-          return <Card key={c._id} {...c} handleDragStart={handleDragStart} setCards={setCards} />;
-        })}
+        {filteredCards.map((c) => (
+          <Card 
+            key={c._id} 
+            {...c} 
+            handleDragStart={handleDragStart} 
+            setCards={setCards} 
+          />
+        ))}
         <DropIndicator beforeId={null} column={column} />
         <AddCard column={column} setCards={setCards} teamName={teamName} />
       </div>
     </div>
   );
-};
+});
 
 export default Column;
